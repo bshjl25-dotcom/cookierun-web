@@ -8,6 +8,13 @@ html, body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  /* 텍스트 선택 / 길게 누르기(롱프레스) 메뉴 / 드래그 완전 차단 */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 body {
@@ -39,6 +46,19 @@ body {
     0 0 0 8px rgba(255, 190, 220, 0.45);
   container-type: size;
   touch-action: manipulation;
+}
+
+/* 게임 영역 안의 모든 요소는 선택·복사·드래그 불가 */
+#game-wrap,
+#game-wrap *,
+#game-wrap *::before,
+#game-wrap *::after {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
 }
 
 #game {
@@ -529,6 +549,10 @@ kbd {
   pointer-events: auto;
   font: inherit;
   font-weight: 900;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
   color: #fff;
   font-size: clamp(12px, 2cqw, 22px);
   border: 0.4cqw solid rgba(255, 255, 255, 0.85);

@@ -909,6 +909,11 @@
   bindHold($('#btn-jump'), () => requestJump());
   bindHold($('#btn-slide'), () => { input.down = true; startSlide(); }, () => { input.down = false; endSlide(); });
 
+  // 모바일 롱프레스로 인한 텍스트 선택 / 복사 / 드래그 메뉴 차단
+  ['contextmenu', 'selectstart', 'dragstart', 'gesturestart'].forEach((type) => {
+    wrap.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+  });
+
   /* ============================================================
      11. 업데이트
      ============================================================ */
