@@ -5,7 +5,8 @@
 
 ---
 
-> 저장소: <https://github.com/bshjl25-dotcom/cookierun-web> (비공개)
+> 🎮 **바로 플레이** : <https://bshjl25-dotcom.github.io/cookierun-web/>
+> 📦 **저장소** : <https://github.com/bshjl25-dotcom/cookierun-web>
 >
 > ```bash
 > git clone https://github.com/bshjl25-dotcom/cookierun-web.git
