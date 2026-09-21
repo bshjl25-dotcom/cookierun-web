@@ -8,10 +8,17 @@
   /* ============================================================
      1. 상수 & 유틸
      ============================================================ */
-  const VIEW_W = 960;
-  const VIEW_H = 540;
-  const GROUND_Y = 442;
-  const PLAYER_X = 190;
+  /* 화면 레이아웃 (가로/세로) — 방향에 따라 월드 크기와 지면 위치가 바뀐다 */
+  const LAYOUTS = {
+    landscape: { W: 960, ground: 442, playerX: 190, speed: 1 },
+    portrait:  { W: 520, ground: 0,   playerX: 118, speed: 0.58 },
+  };
+
+  let VIEW_W = 960;
+  let VIEW_H = 540;
+  let GROUND_Y = 442;
+  let PLAYER_X = 190;
+  let SPEED_SCALE = 1;
 
   const GRAVITY = 2900;
   const MAX_FALL = 1800;
@@ -76,6 +83,7 @@
 
   const canvas = $('#game');
   const ctx = canvas.getContext('2d');
+  const wrap = $('#game-wrap');
   const el = {
     hud: $('#hud'),
     score: $('#hudScore'),
@@ -261,6 +269,7 @@
     combo: 0,
     comboTimer: 0,
     speedMul: 1,       // 속도 배속 (사용자 조절)
+    layout: 'landscape',
   };
 
   const player = {
@@ -307,17 +316,19 @@
 
   function buildBackground() {
     clouds.length = 0;
-    for (let i = 0; i < 9; i++) {
+    const cloudCount = VIEW_W < 700 ? 12 : 9;
+    for (let i = 0; i < cloudCount; i++) {
       clouds.push({
         x: rand(0, VIEW_W + 300),
-        y: rand(30, 200),
+        y: rand(VIEW_H * 0.04, VIEW_H * 0.5),
         s: rand(0.55, 1.5),
         a: rand(0.5, 0.95),
       });
     }
 
     props.length = 0;
-    for (let i = 0; i < 14; i++) {
+    const propCount = VIEW_W < 700 ? 9 : 14;
+    for (let i = 0; i < propCount; i++) {
       props.push({
         x: rand(0, VIEW_W + 200),
         type: pick(['grass', 'grass', 'flower', 'candy', 'pebble']),
@@ -614,7 +625,7 @@
 
     game.time = 0;
     game.distance = 0;
-    game.speed = BASE_SPEED * game.speedMul;
+    game.speed = BASE_SPEED * game.speedMul * SPEED_SCALE;
     game.score = 0;
     game.jellyCount = 0;
     game.hitStun = 0;
@@ -911,7 +922,7 @@
     let scroll = 0;
     if (playing) {
       game.time += dt;
-      const mul = game.speedMul;
+      const mul = game.speedMul * SPEED_SCALE;
       game.speed = Math.min(MAX_SPEED * mul, (BASE_SPEED + game.time * SPEED_ACCEL) * mul);
       scroll = game.speed * dt * (game.hitStun > 0 ? 0.6 : 1);
       game.distance += scroll;
@@ -1252,7 +1263,7 @@
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
     // 해
-    const sx = 790, sy = 92 - phase * 40;
+    const sx = VIEW_W * 0.82, sy = VIEW_H * 0.1 - phase * 40;
     const sunG = ctx.createRadialGradient(sx, sy, 8, sx, sy, 120);
     sunG.addColorStop(0, 'rgba(255,246,200,1)');
     sunG.addColorStop(0.35, 'rgba(255,225,140,0.75)');
@@ -1940,7 +1951,11 @@
       desc.className = 'desc';
       desc.textContent = cookie.desc;
 
-      card.append(thumb, name, tag, desc);
+      const cardBody = document.createElement('div');
+      cardBody.className = 'card-body';
+      cardBody.append(name, tag, desc);
+
+      card.append(thumb, cardBody);
       card.addEventListener('click', () => selectCookie(cookie.id));
       el.cookieList.appendChild(card);
 
@@ -2042,10 +2057,50 @@
     if (document.hidden && game.state === 'playing') pauseGame();
   });
 
-  // 세로 화면 안내는 탭하면 닫힌다
-  const rotateHint = $('#rotate-hint');
-  if (rotateHint) {
-    rotateHint.addEventListener('click', () => { rotateHint.style.display = 'none'; });
+
+
+  const isPortrait = () =>
+    (window.matchMedia && window.matchMedia('(orientation: portrait)').matches)
+    || window.innerHeight > window.innerWidth;
+
+  /** 화면 방향에 맞춰 월드 크기 · 지면 위치 · 속도 배율을 다시 계산한다 */
+  function applyLayout() {
+    const kind = isPortrait() ? 'portrait' : 'landscape';
+    const L = LAYOUTS[kind];
+    const rect = wrap.getBoundingClientRect();
+    const aspect = rect.width > 0 && rect.height > 0 ? rect.height / rect.width : (kind === 'portrait' ? 2 : 9 / 16);
+
+    const prevGround = GROUND_Y;
+    const prevW = VIEW_W;
+
+    VIEW_W = L.W;
+    VIEW_H = kind === 'portrait' ? Math.round(VIEW_W * aspect) : Math.round(VIEW_W * 9 / 16);
+    GROUND_Y = kind === 'portrait'
+      ? Math.round(VIEW_H - clamp(VIEW_H * 0.28, 250, 430))
+      : L.ground;
+    PLAYER_X = L.playerX;
+    SPEED_SCALE = L.speed;
+
+    // 지면이 움직인 만큼 모든 오브젝트를 같이 옮긴다 (회전·주소창 변화 대응)
+    const dy = GROUND_Y - prevGround;
+    if (dy !== 0) {
+      const shift = (arr) => arr.forEach((o) => { o.y += dy; if (o.baseY !== undefined) o.baseY += dy; });
+      shift(obstacles);
+      shift(jellies);
+      shift(powerups);
+      shift(particles);
+      shift(floaters);
+      if (player.onGround) player.y = GROUND_Y;
+      else player.y += dy;
+    }
+    player.x = PLAYER_X;
+
+    if (kind !== game.layout || prevW !== VIEW_W) {
+      game.layout = kind;
+      buildBackground();
+    }
+    document.body.classList.toggle('is-portrait', kind === 'portrait');
+    resizeCanvas();
   }
 
   function resizeCanvas() {
@@ -2054,7 +2109,10 @@
     canvas.height = Math.round(VIEW_H * dpr);
     ctx.imageSmoothingEnabled = true;
   }
-  window.addEventListener('resize', resizeCanvas);
+
+  window.addEventListener('resize', applyLayout);
+  window.addEventListener('orientationchange', () => setTimeout(applyLayout, 120));
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', applyLayout);
 
   /* ============================================================
      16. 메인 루프
@@ -2087,7 +2145,7 @@
     buildCookieCards();
     buildSpeedChips();
     resetRun();
-    resizeCanvas();
+    applyLayout();
 
     window.addEventListener('pointerdown', () => Sound.resume(), { once: true });
     window.addEventListener('keydown', () => Sound.resume(), { once: true });
