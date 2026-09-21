@@ -5,6 +5,14 @@
 
 ---
 
+> 저장소: <https://github.com/bshjl25-dotcom/cookierun-web> (비공개)
+>
+> ```bash
+> git clone https://github.com/bshjl25-dotcom/cookierun-web.git
+> ```
+
+---
+
 ## ▶ 실행 방법
 
 **방법 1 (가장 간단)**
@@ -104,7 +112,7 @@ npx serve .
 ## 📁 파일 구조
 
 ```
-ppt1/
+cookierun-web/
 ├── index.html   # 화면 구조 (HUD, 메뉴, 일시정지, 결과 화면)
 ├── style.css    # UI 스타일 (반응형 / 모바일 대응)
 ├── game.js      # 게임 로직 + Canvas 렌더링
